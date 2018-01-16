@@ -61,8 +61,8 @@ static void *connection_handler(void *data)
                     mgrlog("Send : %s\n", "ACK");
                 }
                 else if (!strncmp(ptr, "ZZZ", 3)) {
-                    send(*client_socket, "ZZZ", 3, 0);
-                    mgrlog("Send : %s\n", "ZZZ");
+                    //send(*client_socket, "ZZZ", 3, 0);
+                    //mgrlog("Send : %s\n", "ZZZ");
                 }
                 ptr += 3;
             }

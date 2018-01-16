@@ -5,6 +5,7 @@
 #define HANG_TEST_LOOP 1000
 //TODO(keep this value)#define HEALTH_TIME 60
 #define HEALTH_TIME 10 
+#define MANAGER_RETRY 3
 
 #define MODULE_NO 3
 

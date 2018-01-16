@@ -17,6 +17,7 @@ static void *send_thread(void *data);
 static void *recv_thread(void *data);
 static void *module_thread(void *data);
 static void *check_manager_thread(void *data);
+static void *time_thread(void *data);
 
 int running = 1;
 time_t health_time;
@@ -36,6 +37,7 @@ pthread_t send_thread_id;
 pthread_t recv_thread_id;
 pthread_t module_thread_ids[MODULE_NO];
 pthread_t check_manager_thread_id;
+pthread_t time_thread_id;
 
 int main(int argc, char **argv)
 {
@@ -113,6 +115,13 @@ static void create_threads(void)
     else {
         printf("Check_manager thread created\n");
     }
+    if (pthread_create(&time_thread_id, NULL, time_thread, NULL))
+    {
+        printf("Error creating time thread\n");
+    }
+    else {
+        printf("Time thread created\n");
+    }
     int i;
     for (i = 0; i < MODULE_NO; i++) {
         if (pthread_create(&module_thread_ids[i], NULL, module_thread, NULL)) {
@@ -131,6 +140,8 @@ static void destroy_threads(void)
         pthread_join(module_thread_ids[i]);
         printf("Module thread %d destroyed\n", i);
     }
+    pthread_join(time_thread_id);
+    printf("Time_thread destroyed\n");
     pthread_join(check_manager_thread_id);
     printf("Check_manager thread destroyed\n");
     pthread_join(send_thread_id);
@@ -193,6 +204,21 @@ static void *check_manager_thread(void *data)
         if (iCount >= HEALTH_TIME) {
             iCount = 0;
             send_event("ZZZ");
+        }
+        usleep(1000 * 1000);
+    }
+}
+
+static void *time_thread(void *data)
+{
+    while (running) {
+        if (nw_okay()) {
+            time_t curr;
+            time(&curr);
+            if (curr - health_time > HEALTH_TIME * MANAGER_RETRY) {
+                printf("Manager not response for long time ..\n");
+                usleep(2000 * 1000);
+            }
         }
         usleep(1000 * 1000);
     }
