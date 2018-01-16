@@ -12,6 +12,7 @@ static void destroy_queue(void);
 static void create_threads(void);
 static void destroy_threads(void);
 static void parse_msg(const char *msg);
+static void final_agent(void);
 
 static void *send_thread(void *data);
 static void *recv_thread(void *data);
@@ -25,7 +26,7 @@ time_t health_time;
 static struct sigaction act;
 void sig_handler(int signal)
 {
-    running = 0;
+    final_agent();
 }
 
 /* Global queues */
@@ -44,28 +45,34 @@ int main(int argc, char **argv)
     handle_signal();
     create_queue();
     create_threads();
-    nw_connect();
-
-    /* request connect */
-    nw_write("ACQ", 3);
 
     int iCount = 0;
-    while (running) {   //TODO: this should be check for nw_okay
-        char *msg = queue_dequeue(recv_queue);
-        if (msg) {
-            parse_msg(msg);
+    while (running) {
+        nw_connect();
+        if (!nw_okay) {
+            sleep(1);
         }
-        else {
-            iCount++;
-            if (iCount >= HANG_TEST_LOOP) {
-                iCount = 0;
-                usleep(10 * 1000);
+        /* request connect */
+        nw_write("ACQ", 3);
+
+        while (nw_okay()) {
+            char *msg = queue_dequeue(recv_queue);
+            if (msg) {
+                parse_msg(msg);
             }
+            else {
+                iCount++;
+                if (iCount >= HANG_TEST_LOOP) {
+                    iCount = 0;
+                    usleep(10 * 1000);
+                }
+            }
+            usleep(10 * 1000);
         }
         usleep(10 * 1000);
+        nw_destroy();
     }
 
-    nw_destroy();
     destroy_threads();
     destroy_queue();
     return 0;
@@ -211,14 +218,19 @@ static void *check_manager_thread(void *data)
 
 static void *time_thread(void *data)
 {
+    int iCount = 0;
     while (running) {
-        if (nw_okay()) {
-            time_t curr;
-            time(&curr);
-            if (curr - health_time > HEALTH_TIME * MANAGER_RETRY) {
-                printf("Manager not response for long time ..\n");
-                usleep(2000 * 1000);
+        iCount++;
+        if (iCount == 10) {
+            if (nw_okay()) {
+                time_t curr;
+                time(&curr);
+                if (curr - health_time > HEALTH_TIME * MANAGER_RETRY) {
+                    printf("Manager not response for long time. Disconnect ...\n");
+                    nw_disconnect();
+                }
             }
+            iCount = 0;
         }
         usleep(1000 * 1000);
     }
@@ -242,3 +254,8 @@ static void parse_msg(const char *msg)
     }
 }
 
+static void final_agent(void)
+{
+    nw_disconnect();
+    running = 0;
+}

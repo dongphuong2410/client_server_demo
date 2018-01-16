@@ -35,5 +35,9 @@ int nw_write(const char *buff, size_t length);
  */
 int nw_read(char *buff);
 
+/**
+ * Disconnect network
+ */
+void nw_disconnect(void);
 
 #endif

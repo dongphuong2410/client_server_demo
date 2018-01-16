@@ -64,6 +64,11 @@ int nw_read(char *buff)
         return res;
 }
 
+void nw_disconnect(void)
+{
+    network_status = NW_STATUS_DISCONNECTED;
+}
+
 static int _check_recv(void)
 {
     fd_set set;
