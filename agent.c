@@ -13,6 +13,7 @@ static void create_threads(void);
 static void destroy_threads(void);
 static void parse_msg(const char *msg);
 
+static void *send_thread(void *data);
 static void *recv_thread(void *data);
 static void *module_thread(void *data);
 
@@ -29,6 +30,7 @@ queue_t *send_queue;
 queue_t *recv_queue;
 
 /* Global threads */
+pthread_t send_thread_id;
 pthread_t recv_thread_id;
 pthread_t module_thread_ids[MODULE_NO];
 
@@ -95,6 +97,13 @@ static void create_threads(void)
     else {
         printf("Receive thread created\n");
     }
+    if (pthread_create(&send_thread_id, NULL, send_thread, NULL))
+    {
+        printf("Error creating send thread\n");
+    }
+    else {
+        printf("Send thread created\n");
+    }
     int i;
     for (i = 0; i < MODULE_NO; i++) {
         if (pthread_create(&module_thread_ids[i], NULL, module_thread, NULL)) {
@@ -122,14 +131,41 @@ static void *recv_thread(void *data)
     static char buff[PACKET_LEN];
     while (running) {
         if (!nw_okay()) {
-            usleep(10000);
+            usleep(10 * 1000);
         }
         else {
             int bytes = nw_read(buff);
             if (bytes <= 0) {
-                usleep(101000);
+                usleep(101 * 1000);
             }
             queue_enqueue(recv_queue, buff);
+        }
+    }
+}
+
+static void *send_thread(void *data)
+{
+    int iCount = 0;
+    while (running) {
+        if (!nw_okay) {
+            usleep(1000 * 1000);
+        }
+        else {
+            char *buff = NULL;
+            while ((buff = queue_dequeue(send_queue))) {
+                nw_write(buff, strnlen(buff, PACKET_LEN));
+                if (!nw_okay()) {
+                    break;
+                }
+                iCount++;
+                if (iCount == 10000) {
+                    usleep(10 * 1000);
+                    iCount = 0;
+                }
+            }
+            if (!buff) {
+                usleep(10 * 1000);
+            }
         }
     }
 }
@@ -143,6 +179,7 @@ static void parse_msg(const char *msg)
 
 static void *module_thread(void *data)
 {
+    static
     while (running) {
         queue_enqueue(send_queue, "EVT");
         usleep(500 * 1000);

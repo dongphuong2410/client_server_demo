@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include "comm.h"
 
 int sock;
 static int network_status = NW_STATUS_DISCONNECTED;
+pthread_mutex_t nw_lock;
 
 int nw_connect()
 {
@@ -23,14 +25,15 @@ int nw_connect()
         printf("Connect failed\n");
         return 1;
     }
-    printf("Connected\n");
     network_status = NW_STATUS_OK;
+    pthread_mutex_init(&nw_lock, NULL);
     return 0;
 }
 
 void nw_destroy()
 {
     printf("Destroy network\n");
+    pthread_mutex_destroy(&nw_lock);
     close(sock);
 }
 
@@ -41,7 +44,9 @@ int nw_okay()
 
 int nw_write(const char *buff, size_t length)
 {
+    pthread_mutex_lock(&nw_lock);
     int res = send(sock, buff, length, 0);
+    pthread_mutex_unlock(&nw_lock);
     if (res < 0)
         printf("Send data error\n");
     return res;
