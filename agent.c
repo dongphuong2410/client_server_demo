@@ -224,6 +224,14 @@ static void *time_thread(void *data)
     }
 }
 
+static void *module_thread(void *data)
+{
+    while (running) {
+        send_event("EVT");
+        usleep(500 * 1000);
+    }
+}
+
 static void parse_msg(const char *msg)
 {
     time(&health_time);
@@ -234,10 +242,3 @@ static void parse_msg(const char *msg)
     }
 }
 
-static void *module_thread(void *data)
-{
-    while (running) {
-        send_event("EVT");
-        usleep(500 * 1000);
-    }
-}

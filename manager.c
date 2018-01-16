@@ -14,10 +14,12 @@ static void thread_init(void);
 static void *run(void *data);
 static void *connection_handler(void *data);
 static void mgrlog(const char *message, ...);
+static void print_help(void);
 
 int quit = 0;
 FILE *logfd;
 pthread_t network_thread;
+int reply_zzz = 1;
 
 int main(int argc, char **argv)
 {
@@ -28,6 +30,8 @@ int main(int argc, char **argv)
 
     /* User command */
     char command[CMD_LEN];
+    printf("=== Manager simulation ===\n");
+    printf("Type 'help' for command list\n");
     while (1) {
         printf("\nmgr>");
         scanf("%s", command);
@@ -35,6 +39,15 @@ int main(int argc, char **argv)
             quit = 1;
             printf("Bye!\n");
             break;
+        }
+        else if (!strncmp(command, "no_zzz", CMD_LEN)) {
+            reply_zzz = 0;
+        }
+        else if (!strncmp(command, "zzz", CMD_LEN)) {
+            reply_zzz = 1;
+        }
+        else if (!strncmp(command, "help", CMD_LEN)) {
+            print_help();
         }
         else {
             printf("Receive : %s", command);
@@ -61,8 +74,10 @@ static void *connection_handler(void *data)
                     mgrlog("Send : %s\n", "ACK");
                 }
                 else if (!strncmp(ptr, "ZZZ", 3)) {
-                    //send(*client_socket, "ZZZ", 3, 0);
-                    //mgrlog("Send : %s\n", "ZZZ");
+                    if (reply_zzz) {
+                        send(*client_socket, "ZZZ", 3, 0);
+                        mgrlog("Send : %s\n", "ZZZ");
+                    }
                 }
                 ptr += 3;
             }
@@ -101,14 +116,25 @@ static void *run(void *data)
     int c = sizeof(struct sockaddr_in);
     mgrlog("Waiting for incomming connections...\n");
     while (!quit) {
-        int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, (socklen_t*)&c);
-        if (client_socket < 0) {
-            mgrlog("Accept failed\n");
+        fd_set set;
+        FD_ZERO(&set);
+        FD_SET(server_socket, &set);
+        struct timeval timeout;
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
+        if (select(server_socket + 1, &set, NULL, NULL, &timeout) > 0) {
+            int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, (socklen_t*)&c);
+            if (client_socket < 0) {
+                mgrlog("Accept failed\n");
+            }
+            mgrlog("Connection accepted\n");
+            if (pthread_create(&network_thread, NULL, connection_handler, &client_socket))
+            {
+                mgrlog("Error creating thread\n");
+            }
         }
-        mgrlog("Connection accepted\n");
-        if (pthread_create(&network_thread, NULL, connection_handler, &client_socket))
-        {
-            mgrlog("Error creating thread\n");
+        else {
+            sleep(1);
         }
     }
 }
@@ -120,4 +146,12 @@ static void mgrlog(const char *message, ...)
     vfprintf(logfd, message, args);
     fflush(logfd);
     va_end(args);
+}
+
+static void print_help(void)
+{
+    printf("%-10s:%-100s\n", "zzz", "Enable ZZZ reply");
+    printf("%-10s:%-100s\n", "no_zzz", "Disable ZZZ reply");
+    printf("%-10s:%-100s\n", "help", "List commands");
+    printf("%-10s:%-100s\n", "quit", "Exit");
 }
