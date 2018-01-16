@@ -11,6 +11,8 @@ static void create_queue(void);
 static void destroy_queue(void);
 static void create_threads(void);
 static void destroy_threads(void);
+static void create_mutex(void);
+static void destroy_mutex(void);
 static void parse_msg(const char *msg);
 static void final_agent(void);
 
@@ -22,6 +24,7 @@ static void *time_thread(void *data);
 
 int running = 1;
 time_t health_time;
+static pthread_mutex_t health_lock;
 
 static struct sigaction act;
 void sig_handler(int signal)
@@ -42,6 +45,7 @@ pthread_t time_thread_id;
 
 int main(int argc, char **argv)
 {
+    create_mutex();
     handle_signal();
     create_queue();
     create_threads();
@@ -75,6 +79,7 @@ int main(int argc, char **argv)
 
     destroy_threads();
     destroy_queue();
+    destroy_mutex();
     return 0;
 }
 
@@ -225,10 +230,12 @@ static void *time_thread(void *data)
             if (nw_okay()) {
                 time_t curr;
                 time(&curr);
+                pthread_mutex_lock(&health_time);
                 if (curr - health_time > HEALTH_TIME * MANAGER_RETRY) {
                     printf("Manager not response for long time. Disconnect ...\n");
                     nw_disconnect();
                 }
+                pthread_mutex_unlock(&health_time);
             }
             iCount = 0;
         }
@@ -246,7 +253,9 @@ static void *module_thread(void *data)
 
 static void parse_msg(const char *msg)
 {
+    pthread_mutex_lock(&health_lock);
     time(&health_time);
+    pthread_mutex_unlock(&health_lock);
     if (!strncmp(msg, "ACK", PACKET_LEN)) {
         printf("ACK received\n");
     }
@@ -258,4 +267,14 @@ static void final_agent(void)
 {
     nw_disconnect();
     running = 0;
+}
+
+static void create_mutex(void)
+{
+    pthread_mutex_init(&health_lock, NULL);
+}
+
+static void destroy_mutex(void)
+{
+    pthread_mutex_destroy(&health_lock);
 }
