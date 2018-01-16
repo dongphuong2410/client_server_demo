@@ -9,6 +9,8 @@ int sock;
 static int network_status = NW_STATUS_DISCONNECTED;
 pthread_mutex_t nw_lock;
 
+static int _check_recv(void);
+
 int nw_connect()
 {
     struct sockaddr_in server;
@@ -54,7 +56,22 @@ int nw_write(const char *buff, size_t length)
 
 int nw_read(char *buff)
 {
-    return recv(sock, buff, PACKET_LEN, 0);
+    int res = _check_recv();
+    if (res > 0) {
+        return recv(sock, buff, PACKET_LEN, 0);
+    }
+    else
+        return res;
 }
 
+static int _check_recv(void)
+{
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(sock, &set);
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    return select(sock + 1, &set, NULL, NULL, &timeout);
 
+}

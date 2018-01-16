@@ -138,7 +138,9 @@ static void *recv_thread(void *data)
             if (bytes <= 0) {
                 usleep(101 * 1000);
             }
-            queue_enqueue(recv_queue, buff);
+            else {
+                queue_enqueue(recv_queue, buff);
+            }
         }
     }
 }
@@ -179,7 +181,6 @@ static void parse_msg(const char *msg)
 
 static void *module_thread(void *data)
 {
-    static
     while (running) {
         queue_enqueue(send_queue, "EVT");
         usleep(500 * 1000);
