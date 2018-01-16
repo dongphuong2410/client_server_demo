@@ -16,8 +16,10 @@ static void parse_msg(const char *msg);
 static void *send_thread(void *data);
 static void *recv_thread(void *data);
 static void *module_thread(void *data);
+static void *check_manager_thread(void *data);
 
 int running = 1;
+time_t health_time;
 
 static struct sigaction act;
 void sig_handler(int signal)
@@ -33,6 +35,7 @@ queue_t *recv_queue;
 pthread_t send_thread_id;
 pthread_t recv_thread_id;
 pthread_t module_thread_ids[MODULE_NO];
+pthread_t check_manager_thread_id;
 
 int main(int argc, char **argv)
 {
@@ -48,7 +51,6 @@ int main(int argc, char **argv)
     while (running) {   //TODO: this should be check for nw_okay
         char *msg = queue_dequeue(recv_queue);
         if (msg) {
-            printf("%s\n", msg);
             parse_msg(msg);
         }
         else {
@@ -104,6 +106,13 @@ static void create_threads(void)
     else {
         printf("Send thread created\n");
     }
+    if (pthread_create(&check_manager_thread_id, NULL, check_manager_thread, NULL))
+    {
+        printf("Error creating check_manager thread\n");
+    }
+    else {
+        printf("Check_manager thread created\n");
+    }
     int i;
     for (i = 0; i < MODULE_NO; i++) {
         if (pthread_create(&module_thread_ids[i], NULL, module_thread, NULL)) {
@@ -117,13 +126,17 @@ static void create_threads(void)
 
 static void destroy_threads(void)
 {
-    pthread_join(recv_thread_id);
-    printf("Receive thread destroyed\n");
     int i;
     for (i = 0; i < MODULE_NO; i++) {
         pthread_join(module_thread_ids[i]);
         printf("Module thread %d destroyed\n", i);
     }
+    pthread_join(check_manager_thread_id);
+    printf("Check_manager thread destroyed\n");
+    pthread_join(send_thread_id);
+    printf("Send thread destroyed\n");
+    pthread_join(recv_thread_id);
+    printf("Receive thread destroyed\n");
 }
 
 static void *recv_thread(void *data)
@@ -172,17 +185,33 @@ static void *send_thread(void *data)
     }
 }
 
+static void *check_manager_thread(void *data)
+{
+    int iCount = 0;
+    while (running) {
+        iCount++;
+        if (iCount >= HEALTH_TIME) {
+            iCount = 0;
+            send_event("ZZZ");
+        }
+        usleep(1000 * 1000);
+    }
+}
+
 static void parse_msg(const char *msg)
 {
-    if (strncmp(msg, "ACK", PACKET_LEN)) {
+    time(&health_time);
+    if (!strncmp(msg, "ACK", PACKET_LEN)) {
         printf("ACK received\n");
+    }
+    else if (!strncmp(msg, "ZZZ", PACKET_LEN)) {
     }
 }
 
 static void *module_thread(void *data)
 {
     while (running) {
-        queue_enqueue(send_queue, "EVT");
+        send_event("EVT");
         usleep(500 * 1000);
     }
 }

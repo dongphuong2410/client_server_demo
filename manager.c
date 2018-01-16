@@ -53,12 +53,18 @@ static void *connection_handler(void *data)
     while (!quit) {
         int bytes = recv(*client_socket, buff, PACKET_LEN, 0);
         if (bytes > 0) {
-            mgrlog("Receive : %s\n", buff);
-            if (!strncmp(buff, "ACQ", PACKET_LEN)) {
-                printf("\nReceive ACQ");
-                printf("\nmgr>");
-                send(*client_socket, "ACK", 3, 0);
-                mgrlog("Send : %s\n", "ACK");
+            char *ptr = buff;
+            while (ptr - buff < bytes) {
+                mgrlog("Receive : %c%c%c\n", ptr[0], ptr[1], ptr[2]);
+                if (!strncmp(ptr, "ACQ", 3)) {
+                    send(*client_socket, "ACK", 3, 0);
+                    mgrlog("Send : %s\n", "ACK");
+                }
+                else if (!strncmp(ptr, "ZZZ", 3)) {
+                    send(*client_socket, "ZZZ", 3, 0);
+                    mgrlog("Send : %s\n", "ZZZ");
+                }
+                ptr += 3;
             }
         }
         else {
