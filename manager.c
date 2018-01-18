@@ -23,7 +23,7 @@ int reply_zzz = 1;
 
 int main(int argc, char **argv)
 {
-    logfd = fopen("manager.log", "a+");
+    logfd = fopen("manager.log", "w+");
 
     /* Create task threads */
     thread_init();

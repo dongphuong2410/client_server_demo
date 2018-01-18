@@ -18,7 +18,7 @@ struct _queue_t {
     pthread_mutex_t qlock;
 };
 
-static int is_full(queue_t *q);
+static inline int is_full(queue_t *q);
 static int is_empty(queue_t *q);
 
 queue_t *queue_init(int q_size)
@@ -82,7 +82,7 @@ char *queue_dequeue(queue_t *q)
     return ret;
 }
 
-static int is_full(queue_t *q)
+static inline int is_full(queue_t *q)
 {
     return (q->rear + 1 == q->front) || (q->rear == q->arr_size -1 && q->front == 0);;
 }

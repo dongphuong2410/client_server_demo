@@ -24,7 +24,9 @@ static void *time_thread(void *data);
 
 int running = 1;
 time_t health_time;
+static unsigned long long event_cnt = 0;
 static pthread_mutex_t health_lock;
+static pthread_mutex_t module_lock;
 
 static struct sigaction act;
 void sig_handler(int signal)
@@ -43,6 +45,11 @@ pthread_t module_thread_ids[MODULE_NO];
 pthread_t check_manager_thread_id;
 pthread_t time_thread_id;
 
+int is_running()
+{
+    int ret = running;
+}
+
 int main(int argc, char **argv)
 {
     create_mutex();
@@ -51,6 +58,8 @@ int main(int argc, char **argv)
     create_threads();
 
     int iCount = 0;
+    time_t start_time;
+    time(&start_time);
     while (running) {
         nw_connect();
         if (!nw_okay) {
@@ -76,7 +85,10 @@ int main(int argc, char **argv)
         usleep(10 * 1000);
         nw_destroy();
     }
+    time_t end_time;
+    time(&end_time);
 
+    printf("time %u eps %llu\n", end_time - start_time, event_cnt / (end_time - start_time));
     destroy_threads();
     destroy_queue();
     destroy_mutex();
@@ -230,12 +242,12 @@ static void *time_thread(void *data)
             if (nw_okay()) {
                 time_t curr;
                 time(&curr);
-                pthread_mutex_lock(&health_time);
+                pthread_mutex_lock(&health_lock);
                 if (curr - health_time > HEALTH_TIME * MANAGER_RETRY) {
                     printf("Manager not response for long time. Disconnect ...\n");
                     nw_disconnect();
                 }
-                pthread_mutex_unlock(&health_time);
+                pthread_mutex_unlock(&health_lock);
             }
             iCount = 0;
         }
@@ -246,8 +258,11 @@ static void *time_thread(void *data)
 static void *module_thread(void *data)
 {
     while (running) {
+        //pthread_mutex_lock(&module_lock);
+        //event_cnt++;
+        //pthread_mutex_unlock(&module_lock);
         send_event("EVT");
-        usleep(500 * 1000);
+        usleep(MODULE_SLEEP);
     }
 }
 
@@ -272,9 +287,11 @@ static void final_agent(void)
 static void create_mutex(void)
 {
     pthread_mutex_init(&health_lock, NULL);
+    pthread_mutex_init(&module_lock, NULL);
 }
 
 static void destroy_mutex(void)
 {
     pthread_mutex_destroy(&health_lock);
+    pthread_mutex_destroy(&module_lock);
 }

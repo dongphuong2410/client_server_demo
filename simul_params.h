@@ -7,7 +7,9 @@
 #define HEALTH_TIME 10 
 #define MANAGER_RETRY 3
 
-#define MODULE_NO 3
+#define MODULE_NO 5
+#define MODULE_SLEEP 100
+#define ENCRYPT_SLEEP 1000
 
 
 

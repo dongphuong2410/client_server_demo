@@ -4,12 +4,14 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "comm.h"
+#include "simul_params.h"
 
 int sock;
 static int network_status = NW_STATUS_DISCONNECTED;
 pthread_mutex_t nw_lock;
 
 static int _check_recv(void);
+static int _encrypt(const char *buff);
 
 int nw_connect()
 {
@@ -39,19 +41,21 @@ void nw_destroy()
     close(sock);
 }
 
-int nw_okay()
+inline int nw_okay()
 {
     return (network_status == NW_STATUS_OK);
 }
 
 int nw_write(const char *buff, size_t length)
 {
+    _encrypt(buff);
     pthread_mutex_lock(&nw_lock);
     int res = send(sock, buff, length, 0);
     pthread_mutex_unlock(&nw_lock);
     if (res < 0)
         printf("Send data error\n");
     return res;
+    return 0;
 }
 
 int nw_read(char *buff)
@@ -79,4 +83,10 @@ static int _check_recv(void)
     timeout.tv_usec = 0;
     return select(sock + 1, &set, NULL, NULL, &timeout);
 
+}
+
+static int _encrypt(const char *buff)
+{
+    //Create a fake busy task
+    usleep(ENCRYPT_SLEEP);
 }

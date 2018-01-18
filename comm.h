@@ -21,7 +21,7 @@ void nw_destroy();
  * Check network okay
  * Return 1 if network okay
  */
-int nw_okay();
+inline int nw_okay();
 
 /**
  * Write data to network
