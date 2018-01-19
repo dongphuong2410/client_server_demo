@@ -8,8 +8,8 @@
 #define MANAGER_RETRY 3
 
 #define MODULE_NO 5
-#define MODULE_SLEEP 100
-#define ENCRYPT_SLEEP 1000
+#define MODULE_SLEEP 300
+#define ENCRYPT_LOOP 1000000
 
 
 

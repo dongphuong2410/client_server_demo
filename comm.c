@@ -87,6 +87,8 @@ static int _check_recv(void)
 
 static int _encrypt(const char *buff)
 {
-    //Create a fake busy task
-    usleep(ENCRYPT_SLEEP);
+    int  i = 0;
+    while (i < ENCRYPT_LOOP) {
+        i++;
+    }
 }

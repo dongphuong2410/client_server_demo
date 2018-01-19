@@ -56,7 +56,7 @@ int queue_enqueue(queue_t *q, const char *data)
             return -1;
         }
         else {
-            usleep(1 * 1000);//Busy
+            usleep(1000);//Busy
         }
     }
 
@@ -87,7 +87,7 @@ static inline int is_full(queue_t *q)
     return (q->rear + 1 == q->front) || (q->rear == q->arr_size -1 && q->front == 0);;
 }
 
-static int is_empty(queue_t *q)
+static inline int is_empty(queue_t *q)
 {
     return (q->front == q->rear);
 }

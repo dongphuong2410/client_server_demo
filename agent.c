@@ -77,12 +77,12 @@ int main(int argc, char **argv)
                 iCount++;
                 if (iCount >= HANG_TEST_LOOP) {
                     iCount = 0;
-                    usleep(10 * 1000);
+                    usleep(10000);
                 }
             }
-            usleep(10 * 1000);
+            usleep(10000);
         }
-        usleep(10 * 1000);
+        usleep(10000);
         nw_destroy();
     }
     time_t end_time;
@@ -179,12 +179,12 @@ static void *recv_thread(void *data)
     static char buff[PACKET_LEN];
     while (running) {
         if (!nw_okay()) {
-            usleep(10 * 1000);
+            usleep(10000);
         }
         else {
             int bytes = nw_read(buff);
             if (bytes <= 0) {
-                usleep(101 * 1000);
+                usleep(101000);
             }
             else {
                 queue_enqueue(recv_queue, buff);
@@ -198,7 +198,7 @@ static void *send_thread(void *data)
     int iCount = 0;
     while (running) {
         if (!nw_okay) {
-            usleep(1000 * 1000);
+            usleep(1000000);
         }
         else {
             char *buff = NULL;
@@ -209,12 +209,12 @@ static void *send_thread(void *data)
                 }
                 iCount++;
                 if (iCount == 10000) {
-                    usleep(10 * 1000);
+                    usleep(10000);
                     iCount = 0;
                 }
             }
             if (!buff) {
-                usleep(10 * 1000);
+                usleep(10000);
             }
         }
     }
@@ -229,7 +229,7 @@ static void *check_manager_thread(void *data)
             iCount = 0;
             send_event("ZZZ");
         }
-        usleep(1000 * 1000);
+        usleep(1000000);
     }
 }
 
@@ -251,7 +251,7 @@ static void *time_thread(void *data)
             }
             iCount = 0;
         }
-        usleep(1000 * 1000);
+        usleep(1000000);
     }
 }
 
