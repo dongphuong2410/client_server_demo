@@ -9,6 +9,7 @@
 int sock;
 static int network_status = NW_STATUS_DISCONNECTED;
 pthread_mutex_t nw_lock;
+extern int ENCRYPT_LOOP;
 
 static int _check_recv(void);
 static int _encrypt(const char *buff);
@@ -87,8 +88,11 @@ static int _check_recv(void)
 
 static int _encrypt(const char *buff)
 {
-    int  i = 0;
+    int i = 0;
+    int sum = 0;
     while (i < ENCRYPT_LOOP) {
+        sum += rand();;
         i++;
     }
+    return sum % 2;
 }

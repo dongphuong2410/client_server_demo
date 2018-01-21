@@ -24,6 +24,9 @@ static void *time_thread(void *data);
 
 int running = 1;
 time_t health_time;
+int MODULE_SLEEP = 300;
+int ENCRYPT_LOOP = 100000;
+
 static unsigned long long event_cnt = 0;
 static pthread_mutex_t health_lock;
 static pthread_mutex_t module_lock;
@@ -52,6 +55,11 @@ int is_running()
 
 int main(int argc, char **argv)
 {
+    if (argc == 3) {
+        MODULE_SLEEP = atoi(argv[1]);
+        ENCRYPT_LOOP = atoi(argv[2]);
+    }
+    srand(time(NULL));
     create_mutex();
     handle_signal();
     create_queue();
@@ -88,7 +96,6 @@ int main(int argc, char **argv)
     time_t end_time;
     time(&end_time);
 
-    printf("time %u eps %llu\n", end_time - start_time, event_cnt / (end_time - start_time));
     destroy_threads();
     destroy_queue();
     destroy_mutex();
